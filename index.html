@@ -1,0 +1,1662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Android Verus Mining Rig — Anjan Ganapathy K</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ===== DESIGN TOKENS ===== */
+:root {
+  --cream:      #FFFCF2;
+  --cream2:     #FFF6DC;
+  --copper:     #B85C2A;
+  --copper-lt:  #D97C4A;
+  --gold:       #C99A2E;
+  --gold-lt:    #F0C050;
+  --pcb:        #2E6B2A;
+  --pcb-lt:     #4A9E45;
+  --ink:        #1C120A;
+  --ink2:       #4A3728;
+  --ink3:       #7A6050;
+  --border:     #E2C890;
+  --border-lt:  #F0DFB0;
+  --surface:    #FFFAEE;
+  --surface2:   #FFF1CC;
+  --red-led:    #FF2D00;
+  --blue-led:   #00AAFF;
+  --green-led:  #22CC44;
+}
+
+/* ===== RESET ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; }
+body {
+  background: var(--cream);
+  color: var(--ink);
+  font-family: 'DM Sans', sans-serif;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* ===== CIRCUIT BACKGROUND ===== */
+.circuit-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.04;
+  background-image:
+    linear-gradient(var(--pcb) 1px, transparent 1px),
+    linear-gradient(90deg, var(--pcb) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+.circuit-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 20% 50%, rgba(200,154,46,0.12) 0%, transparent 60%),
+              radial-gradient(ellipse at 80% 20%, rgba(46,107,42,0.08) 0%, transparent 50%);
+}
+
+/* ===== SCROLL PROGRESS ===== */
+#progress-bar {
+  position: fixed;
+  top: 0; left: 0;
+  height: 3px;
+  width: 0%;
+  background: linear-gradient(90deg, var(--copper), var(--gold), var(--copper-lt));
+  z-index: 1000;
+  transition: width 0.1s;
+  box-shadow: 0 0 8px var(--gold);
+}
+
+/* ===== NAV ===== */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  background: rgba(255,252,242,0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border-lt);
+  padding: 0 clamp(1rem, 4vw, 3rem);
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nav-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.35rem;
+  letter-spacing: 0.08em;
+  color: var(--copper);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.nav-logo .dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--green-led);
+  animation: blink 2s ease-in-out infinite;
+  box-shadow: 0 0 6px var(--green-led);
+}
+@keyframes blink {
+  0%,100% { opacity: 1; }
+  50%      { opacity: 0.2; }
+}
+.nav-links {
+  display: flex;
+  gap: clamp(12px, 2vw, 28px);
+  list-style: none;
+}
+.nav-links a {
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink2);
+  text-decoration: none;
+  transition: color 0.2s;
+  padding: 4px 0;
+  position: relative;
+}
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  bottom: -2px; left: 0; right: 0;
+  height: 2px;
+  background: var(--copper);
+  transform: scaleX(0);
+  transition: transform 0.25s ease;
+  transform-origin: left;
+}
+.nav-links a:hover { color: var(--copper); }
+.nav-links a:hover::after { transform: scaleX(1); }
+
+/* ===== HERO ===== */
+#hero {
+  min-height: 100vh;
+  padding: 100px clamp(1.5rem, 6vw, 5rem) 60px;
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 3rem;
+}
+@media (max-width: 768px) {
+  #hero { grid-template-columns: 1fr; padding-top: 90px; }
+  .hero-visual { display: none; }
+  .nav-links { display: none; }
+}
+
+/* Decorative PCB traces */
+.trace {
+  position: absolute;
+  background: var(--gold);
+  opacity: 0.18;
+  border-radius: 2px;
+}
+.trace-h { height: 2px; }
+.trace-v { width: 2px; }
+.trace-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  position: absolute;
+  background: var(--copper);
+  opacity: 0.25;
+}
+
+.hero-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--pcb-lt);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+  opacity: 0;
+  animation: fadeUp 0.7s 0.2s forwards;
+}
+.hero-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3.5rem, 8vw, 7rem);
+  line-height: 0.92;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  margin-bottom: 0.6rem;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.35s forwards;
+}
+.hero-title .copper { color: var(--copper); }
+.hero-title .gold   { color: var(--gold); }
+
+.hero-sub {
+  font-family: 'Libre Baskerville', serif;
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  font-style: italic;
+  color: var(--ink3);
+  margin-bottom: 2rem;
+  max-width: 480px;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.5s forwards;
+}
+
+.hero-stats {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 2.5rem;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.65s forwards;
+}
+.stat-pill {
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 40px;
+  padding: 10px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+.stat-pill::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(201,154,46,0.08), transparent);
+}
+.stat-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2rem;
+  color: var(--copper);
+  line-height: 1;
+}
+.stat-lbl {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink3);
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.hero-cta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.8s forwards;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 26px;
+  border-radius: 6px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.88rem;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  transition: all 0.22s ease;
+  cursor: pointer;
+  border: none;
+}
+.btn-primary {
+  background: var(--copper);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(184,92,42,0.3);
+}
+.btn-primary:hover {
+  background: var(--copper-lt);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(184,92,42,0.35);
+}
+.btn-secondary {
+  background: transparent;
+  color: var(--ink2);
+  border: 1.5px solid var(--border);
+}
+.btn-secondary:hover {
+  border-color: var(--copper);
+  color: var(--copper);
+  transform: translateY(-2px);
+}
+
+/* ===== HERO VISUAL — Rig Schematic ===== */
+.hero-visual {
+  position: relative;
+  height: 520px;
+  opacity: 0;
+  animation: fadeIn 1.2s 0.9s forwards;
+}
+.rig-frame {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+/* Rack shelves */
+.shelf {
+  position: absolute;
+  left: 5%;
+  width: 70%;
+  height: 110px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+}
+.shelf:nth-child(1) { top: 20px;  animation: slideRight 0.6s 1.0s both; }
+.shelf:nth-child(2) { top: 160px; animation: slideRight 0.6s 1.2s both; }
+.shelf:nth-child(3) { top: 300px; animation: slideRight 0.6s 1.4s both; }
+
+.phone-mini {
+  width: 28px;
+  height: 55px;
+  border-radius: 4px;
+  border: 1.5px solid var(--border);
+  background: var(--ink);
+  position: relative;
+  overflow: hidden;
+}
+.phone-mini::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  background: linear-gradient(160deg, #0a1a2e, #0d3a1a, #0a1a2e);
+  border-radius: 2px;
+}
+.phone-mini::after {
+  content: '';
+  position: absolute;
+  top: 8px; left: 3px; right: 3px;
+  height: 1px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--green-led) 0px, var(--green-led) 1px,
+    transparent 1px, transparent 3px
+  );
+  animation: scan 1.5s linear infinite;
+  opacity: 0.7;
+}
+@keyframes scan {
+  0%   { top: 8px; }
+  100% { top: 44px; }
+}
+
+/* Side panel (power modules) */
+.side-panel {
+  position: absolute;
+  right: 2%;
+  top: 15px;
+  width: 22%;
+  bottom: 80px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface2);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 8px;
+  animation: slideLeft 0.6s 1.5s both;
+}
+.power-module {
+  height: 38px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: #e8f4e0;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 6px;
+}
+.led {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  animation: ledPulse 1.8s ease-in-out infinite;
+}
+.led-r { background: var(--red-led);   box-shadow: 0 0 5px var(--red-led);   animation-delay: 0s; }
+.led-g { background: var(--green-led); box-shadow: 0 0 5px var(--green-led); animation-delay: 0.4s; }
+.led-b { background: var(--blue-led);  box-shadow: 0 0 5px var(--blue-led);  animation-delay: 0.8s; }
+@keyframes ledPulse {
+  0%,100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+.display-mini {
+  width: 32px; height: 14px;
+  background: #1a0a00;
+  border-radius: 2px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 7px;
+  color: var(--red-led);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 1px;
+  text-shadow: 0 0 3px var(--red-led);
+}
+
+/* Connecting wires */
+.wire {
+  position: absolute;
+  height: 2px;
+  border-radius: 1px;
+  transform-origin: left;
+  animation: drawWire 0.8s ease forwards;
+  animation-fill-mode: both;
+}
+@keyframes drawWire {
+  from { width: 0; opacity: 0; }
+  to   { opacity: 1; }
+}
+.rack-label {
+  position: absolute;
+  bottom: 20px;
+  left: 5%;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--pcb-lt);
+  letter-spacing: 0.1em;
+}
+
+/* Hash rate ticker */
+.hash-ticker {
+  position: absolute;
+  right: 0; bottom: 0;
+  background: var(--ink);
+  color: var(--green-led);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  padding: 8px 12px;
+  border-radius: 6px;
+  letter-spacing: 0.05em;
+  animation: fadeIn 0.6s 2s both;
+}
+.hash-ticker span {
+  display: block;
+  margin-bottom: 2px;
+}
+.hash-ticker .hval {
+  font-size: 1rem;
+  color: var(--gold-lt);
+  font-weight: 600;
+}
+
+/* ===== SECTION BASE ===== */
+section {
+  position: relative;
+  z-index: 1;
+  padding: clamp(3rem, 6vw, 5rem) clamp(1.5rem, 6vw, 5rem);
+}
+.section-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.section-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--pcb-lt);
+  margin-bottom: 0.6rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-tag::before {
+  content: '';
+  width: 24px; height: 2px;
+  background: var(--pcb-lt);
+  border-radius: 1px;
+}
+.section-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(2.4rem, 5vw, 4rem);
+  line-height: 1;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  margin-bottom: 1rem;
+}
+.section-lead {
+  font-family: 'Libre Baskerville', serif;
+  font-size: 1.05rem;
+  color: var(--ink3);
+  max-width: 640px;
+  margin-bottom: 2.5rem;
+  line-height: 1.75;
+}
+
+/* Scroll reveal */
+.reveal {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-delay-1 { transition-delay: 0.1s; }
+.reveal-delay-2 { transition-delay: 0.2s; }
+.reveal-delay-3 { transition-delay: 0.3s; }
+.reveal-delay-4 { transition-delay: 0.4s; }
+
+/* ===== QUICK START ===== */
+#quickstart { background: var(--surface); }
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+.step-card {
+  background: var(--cream);
+  border: 1.5px solid var(--border-lt);
+  border-radius: 12px;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.step-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(184,92,42,0.12);
+  border-color: var(--copper);
+}
+.step-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--copper), var(--gold));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease;
+}
+.step-card:hover::before { transform: scaleX(1); }
+.step-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 3.5rem;
+  color: var(--border);
+  line-height: 1;
+  margin-bottom: 0.5rem;
+  transition: color 0.25s;
+}
+.step-card:hover .step-num { color: var(--copper); }
+.step-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--ink);
+  margin-bottom: 0.4rem;
+}
+.step-desc {
+  font-size: 0.83rem;
+  color: var(--ink3);
+  line-height: 1.6;
+}
+
+/* ===== TERMINAL BLOCK ===== */
+.terminal {
+  background: #1C120A;
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 2rem 0;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  border: 1px solid rgba(201,154,46,0.2);
+}
+.terminal-bar {
+  background: #2A1C10;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.t-btn { width: 12px; height: 12px; border-radius: 50%; }
+.t-close  { background: #FF5F57; }
+.t-min    { background: #FFBD2E; }
+.t-max    { background: #28CA41; }
+.t-title  {
+  margin-left: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.4);
+  letter-spacing: 0.05em;
+}
+.terminal-body {
+  padding: 1.25rem 1.5rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  line-height: 1.9;
+  overflow-x: auto;
+}
+.t-comment { color: #6B7A5E; }
+.t-cmd     { color: #E8D090; }
+.t-string  { color: #90D870; }
+.t-prompt  { color: #C8A050; margin-right: 6px; }
+.t-output  { color: #70C88A; opacity: 0.8; }
+.t-key     { color: #80B8FF; }
+
+/* ===== HARDWARE ===== */
+#hardware { background: var(--cream); }
+.hw-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+@media (max-width: 640px) { .hw-grid { grid-template-columns: 1fr; } }
+.hw-card {
+  border: 1.5px solid var(--border-lt);
+  border-radius: 12px;
+  padding: 1.75rem;
+  background: var(--surface);
+  transition: all 0.25s;
+}
+.hw-card:hover {
+  border-color: var(--gold);
+  box-shadow: 0 8px 28px rgba(201,154,46,0.1);
+}
+.hw-icon {
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+  display: block;
+}
+.hw-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.4rem;
+  color: var(--ink);
+  letter-spacing: 0.05em;
+  margin-bottom: 0.4rem;
+}
+.hw-spec {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--pcb-lt);
+  margin-bottom: 0.75rem;
+  letter-spacing: 0.05em;
+}
+.hw-desc {
+  font-size: 0.86rem;
+  color: var(--ink3);
+  line-height: 1.7;
+}
+.hw-tag {
+  display: inline-block;
+  margin-top: 10px;
+  background: rgba(201,154,46,0.1);
+  border: 1px solid var(--border);
+  color: var(--ink2);
+  border-radius: 4px;
+  padding: 3px 9px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ===== WIRING SECTION ===== */
+#wiring { background: var(--surface); }
+.wire-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+  margin-top: 1.5rem;
+}
+.wire-table th {
+  background: var(--surface2);
+  padding: 10px 16px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink2);
+  border-bottom: 2px solid var(--border);
+}
+.wire-table td {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-lt);
+  color: var(--ink2);
+  vertical-align: middle;
+}
+.wire-table tr:last-child td { border-bottom: none; }
+.wire-table tr:hover td { background: rgba(201,154,46,0.04); }
+.wire-color {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.color-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0,0,0,0.12);
+  flex-shrink: 0;
+}
+.mono { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--pcb); }
+
+/* ===== PHONES SECTION ===== */
+#phones { background: var(--cream); }
+.phones-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin-top: 1.5rem;
+}
+.phone-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border-lt);
+  border-radius: 10px;
+  padding: 1rem;
+  transition: all 0.22s;
+  cursor: default;
+}
+.phone-card:hover {
+  transform: translateY(-3px) scale(1.02);
+  border-color: var(--copper);
+  box-shadow: 0 6px 20px rgba(184,92,42,0.1);
+}
+.phone-brand {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--pcb-lt);
+  margin-bottom: 3px;
+}
+.phone-model {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.1rem;
+  color: var(--ink);
+  letter-spacing: 0.04em;
+}
+.phone-soc {
+  font-size: 0.72rem;
+  color: var(--ink3);
+  margin-top: 4px;
+}
+.phone-hash {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.hash-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--border-lt);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.hash-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--pcb-lt), var(--gold));
+  border-radius: 2px;
+  width: 0%;
+  transition: width 1.2s ease;
+}
+.hash-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--copper);
+  white-space: nowrap;
+}
+
+/* ===== RELAY / ALEXA ===== */
+#relay { background: var(--surface); }
+.cycle-visual {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-top: 1.5rem;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+}
+.cycle-block {
+  flex: 1;
+  padding: 1.5rem;
+  text-align: center;
+}
+.cycle-charge {
+  background: linear-gradient(135deg, #e8f4e0, #f5ffe8);
+  border-right: 1px solid var(--border);
+}
+.cycle-discharge {
+  background: linear-gradient(135deg, #fff3e0, #fff8ee);
+}
+.cycle-icon { font-size: 2rem; margin-bottom: 0.5rem; display: block; }
+.cycle-time {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2.5rem;
+  color: var(--ink);
+  line-height: 1;
+}
+.cycle-unit { font-size: 0.75rem; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.1em; }
+.cycle-label {
+  margin-top: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--ink2);
+}
+.alexa-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #232f3e;
+  color: #00caff;
+  padding: 10px 20px;
+  border-radius: 40px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  letter-spacing: 0.05em;
+}
+.alexa-badge svg { width: 18px; height: 18px; fill: #00caff; }
+
+/* ===== DOWNLOADS ===== */
+#downloads { background: var(--cream2); }
+.dl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+.dl-card {
+  background: var(--cream);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: all 0.25s;
+}
+.dl-card:hover {
+  border-color: var(--copper);
+  box-shadow: 0 8px 28px rgba(184,92,42,0.12);
+  transform: translateY(-3px);
+}
+.dl-icon {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+}
+.dl-apk  { background: rgba(46,107,42,0.12); }
+.dl-sh   { background: rgba(201,154,46,0.12); }
+.dl-json { background: rgba(184,92,42,0.12); }
+.dl-zip  { background: rgba(0,170,255,0.1); }
+.dl-name { font-weight: 600; color: var(--ink); }
+.dl-desc { font-size: 0.8rem; color: var(--ink3); line-height: 1.5; }
+.dl-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--copper);
+  text-decoration: none;
+  letter-spacing: 0.04em;
+  margin-top: auto;
+  transition: gap 0.2s;
+}
+.dl-link:hover { gap: 10px; }
+
+/* ===== FOOTER ===== */
+footer {
+  background: var(--ink);
+  color: rgba(255,255,255,0.5);
+  padding: 3rem clamp(1.5rem, 6vw, 5rem);
+  position: relative;
+  z-index: 1;
+}
+.footer-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+.footer-brand {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.8rem;
+  color: var(--gold);
+  letter-spacing: 0.06em;
+  display: block;
+  margin-bottom: 0.4rem;
+}
+.footer-name {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.6);
+}
+.footer-links {
+  display: flex;
+  gap: 1.5rem;
+  list-style: none;
+}
+.footer-links a {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.45);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.footer-links a:hover { color: var(--gold); }
+.footer-copy {
+  width: 100%;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  font-size: 0.75rem;
+  text-align: center;
+  margin-top: 1rem;
+}
+.footer-copy a { color: var(--gold); text-decoration: none; }
+
+/* ===== DIVIDER ===== */
+.section-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+  margin: 0 clamp(1.5rem, 6vw, 5rem);
+}
+
+/* ===== BACK TO TOP ===== */
+#btt {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  width: 42px; height: 42px;
+  background: var(--copper);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(184,92,42,0.35);
+  transition: all 0.25s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(20px);
+  z-index: 200;
+}
+#btt.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+#btt:hover {
+  background: var(--copper-lt);
+  transform: translateY(-3px);
+}
+
+/* ===== KEYFRAMES ===== */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes slideRight {
+  from { opacity: 0; transform: translateX(-30px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideLeft {
+  from { opacity: 0; transform: translateX(30px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ===== NOTICE BAND ===== */
+.notice-band {
+  background: linear-gradient(90deg, var(--pcb), #3d8a38);
+  color: white;
+  text-align: center;
+  padding: 9px 1rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  position: relative;
+  z-index: 1;
+  margin-top: 58px;
+}
+.notice-band strong { color: var(--gold-lt); }
+
+/* ===== TOOLTIP ===== */
+[data-tip] {
+  position: relative;
+}
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: #fff;
+  font-size: 0.7rem;
+  padding: 5px 10px;
+  border-radius: 5px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 10;
+}
+[data-tip]:hover::after { opacity: 1; }
+
+/* Highlight box */
+.highlight-box {
+  background: rgba(201,154,46,0.08);
+  border-left: 3px solid var(--gold);
+  border-radius: 0 8px 8px 0;
+  padding: 1rem 1.25rem;
+  margin: 1.5rem 0;
+  font-size: 0.88rem;
+  color: var(--ink2);
+  line-height: 1.7;
+}
+.highlight-box strong { color: var(--copper); }
+</style>
+</head>
+<body>
+
+<!-- Progress bar -->
+<div id="progress-bar"></div>
+
+<!-- Circuit grid background -->
+<div class="circuit-bg"></div>
+
+<!-- Navigation -->
+<nav>
+  <a href="#hero" class="nav-logo">
+    <span class="dot"></span>
+    VRSC RIG
+  </a>
+  <ul class="nav-links">
+    <li><a href="#quickstart">Quick Start</a></li>
+    <li><a href="#hardware">Hardware</a></li>
+    <li><a href="#wiring">Wiring</a></li>
+    <li><a href="#phones">Phones</a></li>
+    <li><a href="#relay">Relay</a></li>
+    <li><a href="#downloads">Downloads</a></li>
+  </ul>
+</nav>
+
+<!-- Hero -->
+<section id="hero">
+  <!-- PCB trace decorations -->
+  <div class="trace trace-h" style="top:15%;left:0;width:200px;"></div>
+  <div class="trace trace-v" style="top:10%;left:200px;height:80px;"></div>
+  <div class="trace-dot" style="top:calc(10% + 80px);left:198px;"></div>
+  <div class="trace trace-h" style="bottom:20%;right:0;width:150px;"></div>
+
+  <div class="hero-content">
+    <p class="hero-eyebrow">// Open Source · Verus Coin · Android ARM</p>
+    <h1 class="hero-title">
+      36-<span class="copper">PHONE</span><br>
+      MINING<br>
+      <span class="gold">RIG</span>
+    </h1>
+    <p class="hero-sub">
+      A complete DIY guide to building a multi-smartphone Verus Coin mining rig from recycled Android hardware — running 3+ years strong.
+    </p>
+
+    <div class="hero-stats">
+      <div class="stat-pill" data-tip="Total phones in rig">
+        <span class="stat-num" data-count="36">0</span>
+        <span class="stat-lbl">Phones</span>
+      </div>
+      <div class="stat-pill" data-tip="Years running">
+        <span class="stat-num" data-count="3">0</span>
+        <span class="stat-lbl">Years Running</span>
+      </div>
+      <div class="stat-pill" data-tip="Approximate total hashrate">
+        <span class="stat-num">16K+</span>
+        <span class="stat-lbl">H/s Total</span>
+      </div>
+      <div class="stat-pill" data-tip="Supported Android models">
+        <span class="stat-num" data-count="22">0</span>
+        <span class="stat-lbl">Models Tested</span>
+      </div>
+    </div>
+
+    <div class="hero-cta">
+      <a href="#quickstart" class="btn btn-primary">⚡ Quick Start</a>
+      <a href="#downloads" class="btn btn-secondary">↓ Download Repo</a>
+      <a href="https://github.com/ajvizganapathy-pixel" target="_blank" class="btn btn-secondary">⭐ GitHub</a>
+    </div>
+  </div>
+
+  <!-- Hero Visual — Animated Rig Schematic -->
+  <div class="hero-visual">
+    <div class="rig-frame">
+
+      <!-- Shelves with phones -->
+      <div class="shelf">
+        <div class="phone-mini"></div><div class="phone-mini"></div>
+        <div class="phone-mini"></div><div class="phone-mini"></div>
+        <div class="phone-mini"></div><div class="phone-mini"></div>
+        <div class="phone-mini"></div><div class="phone-mini"></div>
+      </div>
+      <div class="shelf">
+        <div class="phone-mini"></div><div class="phone-mini"></div>
+        <div class="phone-mini"></div><div class="phone-mini"></div>
+        <div class="phone-mini"></div><div class="phone-mini"></div>
+        <div class="phone-mini"></div><div class="phone-mini"></div>
+      </div>
+      <div class="shelf">
+        <div class="phone-mini"></div><div class="phone-mini"></div>
+        <div class="phone-mini"></div><div class="phone-mini"></div>
+        <div class="phone-mini"></div><div class="phone-mini"></div>
+        <div class="phone-mini"></div><div class="phone-mini"></div>
+      </div>
+
+      <!-- Side power panel -->
+      <div class="side-panel">
+        <div class="power-module">
+          <div class="led led-r"></div>
+          <div class="display-mini">5.05</div>
+          <div class="led led-g"></div>
+        </div>
+        <div class="power-module">
+          <div class="led led-b"></div>
+          <div class="display-mini">5.05</div>
+          <div class="led led-g"></div>
+        </div>
+        <div class="power-module">
+          <div class="led led-r"></div>
+          <div class="display-mini">5.05</div>
+          <div class="led led-b"></div>
+        </div>
+        <div class="power-module">
+          <div class="led led-g"></div>
+          <div class="display-mini">20.0</div>
+          <div class="led led-r"></div>
+        </div>
+      </div>
+
+      <!-- Wires -->
+      <div class="wire" style="top:78px;left:76%;width:0;background:#cc2200;animation-duration:0.6s;animation-delay:1.7s;" id="w1"></div>
+      <div class="wire" style="top:218px;left:76%;width:0;background:#cc2200;animation-duration:0.6s;animation-delay:1.85s;" id="w2"></div>
+      <div class="wire" style="top:358px;left:76%;width:0;background:#cc2200;animation-duration:0.6s;animation-delay:2.0s;" id="w3"></div>
+
+      <div class="rack-label">TIER 1–3 / 36 UNITS / vipor.net</div>
+
+      <!-- Hash ticker -->
+      <div class="hash-ticker">
+        <span>LIVE MINER STATUS</span>
+        <span class="hval" id="hash-display">450 H/s</span>
+        <span style="color:rgba(255,255,255,0.4)">sg.vipor.net:5040</span>
+        <span style="color:var(--green-led)">● CONNECTED</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Notice band -->
+<div class="notice-band">
+  ⚠️ <strong>Wallet Note:</strong> Wallet address shown in config is an <strong>example only</strong> — always replace with your own from the Verus Mobile app.
+</div>
+
+<div class="section-divider"></div>
+
+<!-- Quick Start -->
+<section id="quickstart">
+  <div class="section-inner">
+    <div class="reveal">
+      <p class="section-tag">01 — Software</p>
+      <h2 class="section-title">Quick Start<br><span style="color:var(--copper)">Mining</span></h2>
+      <p class="section-lead">Get a single Android phone mining Verus Coin in under 20 minutes — no hardware modification needed.</p>
+    </div>
+
+    <div class="steps-grid">
+      <div class="step-card reveal reveal-delay-1">
+        <div class="step-num">01</div>
+        <div class="step-title">Install Termux (F-Droid)</div>
+        <div class="step-desc">Download F-Droid from f-droid.org, then install Termux from within F-Droid. <em>Do not use Play Store version.</em></div>
+      </div>
+      <div class="step-card reveal reveal-delay-2">
+        <div class="step-num">02</div>
+        <div class="step-title">Run install.sh</div>
+        <div class="step-desc">Download install.sh from this repo, place in Termux home, run it. Compiles ccminer automatically.</div>
+      </div>
+      <div class="step-card reveal reveal-delay-3">
+        <div class="step-num">03</div>
+        <div class="step-title">Edit config.json</div>
+        <div class="step-desc">Open config.json and replace the wallet address with your own from the Verus Mobile app.</div>
+      </div>
+      <div class="step-card reveal reveal-delay-4">
+        <div class="step-num">04</div>
+        <div class="step-title">Start Mining</div>
+        <div class="step-desc">Run <code style="font-family:monospace;background:var(--surface2);padding:1px 5px;border-radius:3px;">~/ccminer/start.sh</code> and check vipor.net for your stats.</div>
+      </div>
+    </div>
+
+    <div class="terminal reveal">
+      <div class="terminal-bar">
+        <div class="t-btn t-close"></div>
+        <div class="t-btn t-min"></div>
+        <div class="t-btn t-max"></div>
+        <span class="t-title">termux — bash</span>
+      </div>
+      <div class="terminal-body">
+        <div><span class="t-prompt">$</span><span class="t-comment"># Update packages</span></div>
+        <div><span class="t-prompt">$</span><span class="t-cmd">yes | pkg update && pkg upgrade -y</span></div>
+        <div><span class="t-prompt">$</span><span class="t-comment"># Install dependencies</span></div>
+        <div><span class="t-prompt">$</span><span class="t-cmd">yes | pkg install libjansson build-essential clang binutils git <span class="t-string">-y</span></span></div>
+        <div><span class="t-prompt">$</span><span class="t-comment"># Fix missing header</span></div>
+        <div><span class="t-prompt">$</span><span class="t-cmd">cp /data/data/com.termux/files/usr/include/linux/sysctl.h \</span></div>
+        <div>&nbsp;&nbsp;&nbsp;<span class="t-cmd">/data/data/com.termux/files/usr/include/sys</span></div>
+        <div><span class="t-prompt">$</span><span class="t-comment"># Clone ccminer</span></div>
+        <div><span class="t-prompt">$</span><span class="t-cmd">git clone https://github.com/Darktron/ccminer.git</span></div>
+        <div><span class="t-prompt">$</span><span class="t-cmd">cd ccminer && chmod +x build.sh configure.sh autogen.sh start.sh</span></div>
+        <div><span class="t-prompt">$</span><span class="t-comment"># Build with clang</span></div>
+        <div><span class="t-prompt">$</span><span class="t-cmd"><span class="t-key">CXX</span>=clang++ <span class="t-key">CC</span>=clang ./build.sh</span></div>
+        <div>&nbsp;</div>
+        <div><span class="t-output">✓ ccminer compiled successfully</span></div>
+        <div><span class="t-output">✓ Stratum connected to sg.vipor.net:5040</span></div>
+        <div><span class="t-output">✓ CPU T0..T5: Verus Hashing — 452.3 H/s</span></div>
+      </div>
+    </div>
+
+    <div class="highlight-box reveal">
+      <strong>Auto-start on boot:</strong> Add <code style="font-family:monospace;background:rgba(0,0,0,0.06);padding:1px 6px;border-radius:3px;">cd ccminer/ && ./start.sh</code> to <code style="font-family:monospace;background:rgba(0,0,0,0.06);padding:1px 6px;border-radius:3px;">/data/data/com.termux/files/usr/etc/bash.bashrc</code> — combined with the AutoStart APK, this makes mining begin automatically on every power-on.
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- Hardware -->
+<section id="hardware">
+  <div class="section-inner">
+    <div class="reveal">
+      <p class="section-tag">02 — Electronics</p>
+      <h2 class="section-title">Hardware<br><span style="color:var(--copper)">Components</span></h2>
+      <p class="section-lead">Each tier of 12 phones runs independently with its own power supply, buck converters, and relay control modules.</p>
+    </div>
+
+    <div class="hw-grid">
+      <div class="hw-card reveal reveal-delay-1">
+        <span class="hw-icon">⚡</span>
+        <div class="hw-name">XL4015 Buck Converter</div>
+        <div class="hw-spec">INPUT: 8–36V · OUTPUT: 5A continuous</div>
+        <div class="hw-desc">Steps down 12V PSU output to a clean, regulated 5.05V for each group of 4 phones. Set output with blue trim pot before connecting phones.</div>
+        <span class="hw-tag">3× per tier · 9 total</span>
+      </div>
+      <div class="hw-card reveal reveal-delay-2">
+        <span class="hw-icon">🔋</span>
+        <div class="hw-name">MUR460 Fast Recovery Diode</div>
+        <div class="hw-spec">4A · 600V · DO-201AD axial</div>
+        <div class="hw-desc">Installed on bare motherboards between Vbus and Vbat pad. The ~0.8V forward drop gives ~4.2V to Vbat, fooling Android into thinking a battery is present.</div>
+        <span class="hw-tag">1× per bare board</span>
+      </div>
+      <div class="hw-card reveal reveal-delay-3">
+        <span class="hw-icon">🔌</span>
+        <div class="hw-name">20A Switching PSU</div>
+        <div class="hw-spec">12V DC · 240W · 100–240V AC input</div>
+        <div class="hw-desc">One PSU powers an entire tier of 12 phones. Add a 20A fuse on the V+ output line. Use 12AWG wire minimum for main power runs.</div>
+        <span class="hw-tag">1× per tier · 3 total</span>
+      </div>
+      <div class="hw-card reveal reveal-delay-4">
+        <span class="hw-icon">⏱️</span>
+        <div class="hw-name">NE555 Delay Module</div>
+        <div class="hw-spec">12V · Monostable · Adjustable 0.1s–60s</div>
+        <div class="hw-desc">Triggers a 1–2 second pulse to the phone board's PWR_KEY pad when power is first applied. Adjust the blue trim pot for desired delay before power-on.</div>
+        <span class="hw-tag">1× per bare board node</span>
+      </div>
+      <div class="hw-card reveal reveal-delay-1">
+        <span class="hw-icon">📡</span>
+        <div class="hw-name">ESP8266 WiFi Relay Module</div>
+        <div class="hw-spec">2.4GHz WiFi · 1-channel · Tasmota</div>
+        <div class="hw-desc">Flashed with Tasmota firmware for Alexa integration. Sits on the 12V input line to the XL4015 — cuts charging power on Alexa's schedule.</div>
+        <span class="hw-tag">4× per tier · 12 total</span>
+      </div>
+      <div class="hw-card reveal reveal-delay-2">
+        <span class="hw-icon">🌀</span>
+        <div class="hw-name">Cooling Fans</div>
+        <div class="hw-spec">12V · 80mm or 120mm case fans</div>
+        <div class="hw-desc">Two fans per tier positioned to blow across the row of phones. Phones mining at full load generate significant heat — airflow is essential for stable long-term operation.</div>
+        <span class="hw-tag">2× per tier · 6 total</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- Wiring -->
+<section id="wiring">
+  <div class="section-inner">
+    <div class="reveal">
+      <p class="section-tag">03 — Motherboard Mod</p>
+      <h2 class="section-title">USB-A<br><span style="color:var(--copper)">Wiring Guide</span></h2>
+      <p class="section-lead">Solder a standard USB-A male connector directly to the phone motherboard's test points for power delivery and data handshake.</p>
+    </div>
+
+    <div class="reveal">
+      <table class="wire-table">
+        <thead>
+          <tr>
+            <th>USB-A Pin</th>
+            <th>Wire Color</th>
+            <th>Board Test Point</th>
+            <th>Voltage</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="mono">Pin 1 (VCC)</span></td>
+            <td><div class="wire-color"><div class="color-dot" style="background:#e63030;"></div> Red</div></td>
+            <td><span class="mono">Vbus pad</span></td>
+            <td><span class="mono">5.0V</span></td>
+            <td>Main supply input</td>
+          </tr>
+          <tr>
+            <td><span class="mono">Pin 4 (GND)</span></td>
+            <td><div class="wire-color"><div class="color-dot" style="background:#222;border-color:#666;"></div> Black</div></td>
+            <td><span class="mono">GND pad</span></td>
+            <td><span class="mono">0V</span></td>
+            <td>Ground reference</td>
+          </tr>
+          <tr>
+            <td><span class="mono">Pin 2 (D−)</span></td>
+            <td><div class="wire-color"><div class="color-dot" style="background:#f5f5f5;"></div> White</div></td>
+            <td><span class="mono">D− pad</span></td>
+            <td><span class="mono">—</span></td>
+            <td>USB data minus</td>
+          </tr>
+          <tr>
+            <td><span class="mono">Pin 3 (D+)</span></td>
+            <td><div class="wire-color"><div class="color-dot" style="background:#1f8c2e;"></div> Green</div></td>
+            <td><span class="mono">D+ pad (via 4.7kΩ)</span></td>
+            <td><span class="mono">—</span></td>
+            <td>Charger handshake</td>
+          </tr>
+          <tr>
+            <td colspan="2"><strong>MUR460 Diode</strong></td>
+            <td><span class="mono">Vbus → Vbat</span></td>
+            <td><span class="mono">~4.2V</span></td>
+            <td>Mimics battery presence</td>
+          </tr>
+          <tr>
+            <td colspan="2"><strong>NE555 Output</strong></td>
+            <td><span class="mono">PWR_KEY pad</span></td>
+            <td><span class="mono">~3.3V pulse</span></td>
+            <td>Auto power-on trigger</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="highlight-box reveal">
+      <strong>Finding pads:</strong> Search your board's model number + "schematic" or "test points" online. Use a multimeter in continuity mode to trace from the USB port pins or battery connector. The reference image (Image 17) in the repo shows the JUMPER point, 4K5 resistor location, and PSU 4V supply points for a typical Qualcomm/MediaTek board.
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- Phones -->
+<section id="phones">
+  <div class="section-inner">
+    <div class="reveal">
+      <p class="section-tag">04 — Confirmed Working</p>
+      <h2 class="section-title">Supported<br><span style="color:var(--copper)">Android Phones</span></h2>
+      <p class="section-lead">All models below are confirmed working in this build — no extra research needed. Hover to see approximate hashrate.</p>
+    </div>
+
+    <div class="phones-grid" id="phones-grid">
+      <!-- Populated by JS -->
+    </div>
+
+    <div class="highlight-box reveal" style="margin-top:1.5rem;">
+      <strong>Thread guide:</strong> 2GB RAM → 4 threads · 3GB → 5–6 threads · 4GB → 6 threads · 6GB+ → 6–8 threads. Monitor temperature with <code style="font-family:monospace;background:rgba(0,0,0,0.06);padding:1px 6px;border-radius:3px;">cat /sys/class/thermal/thermal_zone0/temp</code> (divide by 1000 for °C).
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- Relay / Alexa -->
+<section id="relay">
+  <div class="section-inner">
+    <div class="reveal">
+      <p class="section-tag">05 — Automation</p>
+      <h2 class="section-title">Alexa Charge<br><span style="color:var(--copper)">Cycle Control</span></h2>
+      <p class="section-lead">ESP8266 relays flashed with Tasmota expose a Hue-compatible interface. Alexa daily routines run the charge/discharge cycle automatically.</p>
+    </div>
+
+    <div class="cycle-visual reveal">
+      <div class="cycle-block cycle-charge">
+        <span class="cycle-icon">⚡</span>
+        <div class="cycle-time">4.5</div>
+        <div class="cycle-unit">Hours</div>
+        <div class="cycle-label">Charging (Relay ON)</div>
+      </div>
+      <div class="cycle-block cycle-discharge">
+        <span class="cycle-icon">🔋</span>
+        <div class="cycle-time">1.5</div>
+        <div class="cycle-unit">Hours</div>
+        <div class="cycle-label">Discharge — Mining on battery</div>
+      </div>
+    </div>
+
+    <div style="text-align:center;" class="reveal">
+      <div class="alexa-badge">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+        Controlled via Amazon Alexa · Daily Routines · 4 cycles/day
+      </div>
+    </div>
+
+    <div class="terminal reveal" style="margin-top:2rem;">
+      <div class="terminal-bar">
+        <div class="t-btn t-close"></div><div class="t-btn t-min"></div><div class="t-btn t-max"></div>
+        <span class="t-title">Tasmota Console — ESP8266 Relay</span>
+      </div>
+      <div class="terminal-body">
+        <div><span class="t-comment"># Flash Tasmota via Chrome browser</span></div>
+        <div><span class="t-cmd">https://tasmota.github.io/install/</span></div>
+        <div>&nbsp;</div>
+        <div><span class="t-comment"># Enable Emulated Hue in Tasmota web UI</span></div>
+        <div><span class="t-cmd">Configuration → Configure Other → Emulated Hue → ON</span></div>
+        <div>&nbsp;</div>
+        <div><span class="t-comment"># Alexa discovers relay as smart switch</span></div>
+        <div><span class="t-cmd">Alexa app → Devices → Discover → "Top Rack Charger 1"</span></div>
+        <div>&nbsp;</div>
+        <div><span class="t-comment"># Alexa Routine — Start charging (4× per day)</span></div>
+        <div><span class="t-output">Trigger: Schedule 06:00, 12:00, 18:00, 00:00</span></div>
+        <div><span class="t-output">Action:  Smart Home → Turn ON → All relay switches</span></div>
+        <div>&nbsp;</div>
+        <div><span class="t-comment"># Alexa Routine — Stop charging (1.5h later)</span></div>
+        <div><span class="t-output">Trigger: Schedule 10:30, 16:30, 22:30, 04:30</span></div>
+        <div><span class="t-output">Action:  Smart Home → Turn OFF → All relay switches</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- Downloads -->
+<section id="downloads">
+  <div class="section-inner">
+    <div class="reveal">
+      <p class="section-tag">06 — Repository</p>
+      <h2 class="section-title">Downloads &<br><span style="color:var(--copper)">Files</span></h2>
+      <p class="section-lead">Everything you need to replicate this build — APKs, scripts, config files, and full documentation.</p>
+    </div>
+
+    <div class="dl-grid">
+      <div class="dl-card reveal reveal-delay-1">
+        <div class="dl-icon dl-apk">📱</div>
+        <div class="dl-name">ScreenAwake 1.2.0</div>
+        <div class="dl-desc">Keeps screen permanently on. Required for unattended mining on all Android phones.</div>
+        <a href="apks/ScreenAwake_1.2.0.apk" class="dl-link">Download APK →</a>
+      </div>
+      <div class="dl-card reveal reveal-delay-2">
+        <div class="dl-icon dl-apk">🚀</div>
+        <div class="dl-name">AutoStart Manager 5.1</div>
+        <div class="dl-desc">Auto-launches Termux when Android boots. Combined with bashrc, achieves fully automatic boot-to-mine.</div>
+        <a href="apks/AutoStartManager_5.1.apk" class="dl-link">Download APK →</a>
+      </div>
+      <div class="dl-card reveal reveal-delay-3">
+        <div class="dl-icon dl-sh">⚙️</div>
+        <div class="dl-name">install.sh</div>
+        <div class="dl-desc">One-shot script that installs all dependencies, clones ccminer, builds it, and sets up auto-start.</div>
+        <a href="scripts/install.sh" class="dl-link">Download Script →</a>
+      </div>
+      <div class="dl-card reveal reveal-delay-4">
+        <div class="dl-icon dl-json">📄</div>
+        <div class="dl-name">config.json</div>
+        <div class="dl-desc">ccminer pool configuration for vipor.net. Edit the wallet address field before using.</div>
+        <a href="scripts/config.json" class="dl-link">Download Config →</a>
+      </div>
+      <div class="dl-card reveal reveal-delay-1">
+        <div class="dl-icon dl-sh">▶️</div>
+        <div class="dl-name">start.sh</div>
+        <div class="dl-desc">Mining start script with auto-reconnect loop, wake-lock acquisition, and config validation.</div>
+        <a href="scripts/start.sh" class="dl-link">Download Script →</a>
+      </div>
+      <div class="dl-card reveal reveal-delay-2">
+        <div class="dl-icon dl-zip">📦</div>
+        <div class="dl-name">Full Repo (ZIP)</div>
+        <div class="dl-desc">Complete repository including all docs, scripts, APKs, and configuration files. Upload directly to GitHub.</div>
+        <a href="android-verus-mining-rig.zip" class="dl-link">Download ZIP →</a>
+      </div>
+    </div>
+
+    <div class="highlight-box reveal" style="margin-top:2rem;">
+      <strong>GitHub Upload:</strong> Unzip the downloaded repo, then drag and drop all folders into your new GitHub repository via the web interface — or use <code style="font-family:monospace;background:rgba(0,0,0,0.06);padding:1px 6px;border-radius:3px;">git push -u origin main</code> from the terminal.
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-inner">
+    <div>
+      <span class="footer-brand">VRSC ANDROID RIG</span>
+      <span class="footer-name">Built & documented by Anjan Ganapathy K · ajvizganapathy@gmail.com</span>
+    </div>
+    <ul class="footer-links">
+      <li><a href="https://github.com/ajvizganapathy-pixel" target="_blank">GitHub</a></li>
+      <li><a href="https://vipor.net" target="_blank">vipor.net</a></li>
+      <li><a href="https://veruscoin.io" target="_blank">Verus Coin</a></li>
+      <li><a href="#downloads">Downloads</a></li>
+    </ul>
+    <div class="footer-copy">
+      MIT License · Free to use with attribution ·
+      <a href="https://github.com/ajvizganapathy-pixel/android-verus-mining-rig">github.com/ajvizganapathy-pixel/android-verus-mining-rig</a>
+    </div>
+  </div>
+</footer>
+
+<!-- Back to top -->
+<button id="btt" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<script>
+// ===== SCROLL PROGRESS =====
+const progressBar = document.getElementById('progress-bar');
+window.addEventListener('scroll', () => {
+  const pct = window.scrollY / (document.body.scrollHeight - window.innerHeight) * 100;
+  progressBar.style.width = pct + '%';
+});
+
+// ===== BACK TO TOP =====
+const btt = document.getElementById('btt');
+window.addEventListener('scroll', () => {
+  btt.classList.toggle('show', window.scrollY > 400);
+});
+
+// ===== REVEAL ON SCROLL =====
+const revealEls = document.querySelectorAll('.reveal');
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      revealObserver.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+revealEls.forEach(el => revealObserver.observe(el));
+
+// ===== COUNTER ANIMATION =====
+function animateCount(el, target, duration = 1400) {
+  const start = performance.now();
+  const update = (now) => {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    el.textContent = Math.round(eased * target);
+    if (progress < 1) requestAnimationFrame(update);
+  };
+  requestAnimationFrame(update);
+}
+
+const counters = document.querySelectorAll('[data-count]');
+const counterObserver = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      animateCount(e.target, parseInt(e.target.dataset.count));
+      counterObserver.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.5 });
+counters.forEach(el => counterObserver.observe(el));
+
+// ===== HASH TICKER =====
+const hashDisplay = document.getElementById('hash-display');
+const baseRates = [388, 421, 455, 443, 467, 412, 438, 460, 472, 395,
+                   415, 449, 463, 428, 456, 444, 437, 471, 406, 459];
+let tickerIndex = 0;
+setInterval(() => {
+  const variation = (Math.random() - 0.5) * 30;
+  const val = (baseRates[tickerIndex % baseRates.length] + variation).toFixed(1);
+  hashDisplay.textContent = val + ' H/s';
+  tickerIndex++;
+}, 2200);
+
+// ===== ANIMATE WIRES =====
+setTimeout(() => {
+  ['w1','w2','w3'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.style.width = '24%';
+    }
+  });
+}, 1800);
+
+// ===== PHONE DATA =====
+const phones = [
+  { brand:'Vivo', model:'1929 (Y19)', soc:'Helio P65', hash:580, maxHash:700 },
+  { brand:'Samsung', model:'S9+', soc:'Exynos 9810', hash:680, maxHash:700 },
+  { brand:'Samsung', model:'M31', soc:'Exynos 9611', hash:650, maxHash:700 },
+  { brand:'Xiaomi', model:'Redmi Y3', soc:'Snapdragon 632', hash:600, maxHash:700 },
+  { brand:'Xiaomi', model:'Redmi 13C', soc:'Helio G85', hash:610, maxHash:700 },
+  { brand:'Vivo', model:'Y17S', soc:'Helio G85', hash:590, maxHash:700 },
+  { brand:'Xiaomi', model:'Redmi 6 Pro', soc:'Snapdragon 625', hash:570, maxHash:700 },
+  { brand:'Samsung', model:'A30', soc:'Exynos 7904', hash:530, maxHash:700 },
+  { brand:'Vivo', model:'1814 (V9Y)', soc:'Snapdragon 450', hash:450, maxHash:700 },
+  { brand:'Vivo', model:'1820 (Y83P)', soc:'Helio P22', hash:430, maxHash:700 },
+  { brand:'Vivo', model:'1726 (Y83)', soc:'Helio P22', hash:420, maxHash:700 },
+  { brand:'Vivo', model:'1816 (Y81)', soc:'Helio P22', hash:415, maxHash:700 },
+  { brand:'Xiaomi', model:'Redmi 7', soc:'Snapdragon 632', hash:510, maxHash:700 },
+  { brand:'Vivo', model:'1716 (Y71)', soc:'Snapdragon 425', hash:350, maxHash:700 },
+  { brand:'Vivo', model:'1904 (Y91i)', soc:'Helio P22', hash:360, maxHash:700 },
+  { brand:'Nokia', model:'3.1 Plus', soc:'Helio P22', hash:390, maxHash:700 },
+  { brand:'Huawei', model:'Y7 Prime', soc:'Kirin 659', hash:400, maxHash:700 },
+  { brand:'Vivo', model:'1901 (Y91)', soc:'Helio P22', hash:355, maxHash:700 },
+  { brand:'Xiaomi', model:'Redmi 6A', soc:'Helio A22', hash:310, maxHash:700 },
+  { brand:'Vivo', model:'1907 (Y15)', soc:'Helio P22', hash:380, maxHash:700 },
+  { brand:'Vivo', model:'1718 (Y81i)', soc:'MT6762', hash:330, maxHash:700 },
+  { brand:'Vivo', model:'1803 (Y85)', soc:'Helio P23', hash:410, maxHash:700 },
+];
+
+const grid = document.getElementById('phones-grid');
+phones.forEach((p, i) => {
+  const card = document.createElement('div');
+  card.className = 'phone-card reveal';
+  card.style.transitionDelay = (i % 6 * 0.06) + 's';
+  const barPct = Math.round(p.hash / p.maxHash * 100);
+  card.innerHTML = `
+    <div class="phone-brand">${p.brand}</div>
+    <div class="phone-model">${p.model}</div>
+    <div class="phone-soc">${p.soc}</div>
+    <div class="phone-hash">
+      <div class="hash-bar"><div class="hash-fill" data-width="${barPct}"></div></div>
+      <span class="hash-val">~${p.hash} H/s</span>
+    </div>
+  `;
+  grid.appendChild(card);
+  revealObserver.observe(card);
+});
+
+// Animate hash bars when visible
+const hashFills = document.querySelectorAll('.hash-fill');
+const hashObserver = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.style.width = e.target.dataset.width + '%';
+      hashObserver.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.3 });
+setTimeout(() => {
+  document.querySelectorAll('.hash-fill').forEach(el => hashObserver.observe(el));
+}, 100);
+</script>
+</body>
+</html>
