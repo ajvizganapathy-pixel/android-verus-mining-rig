@@ -1,0 +1,32 @@
+{
+  "_comment": "Verus Coin (VRSC) ccminer config — Edit 'user' with your own wallet address",
+  "_wallet_note": "Get your wallet address from Verus Mobile app on Play Store",
+  "_example_wallet": "RDxVQALK7PudTe5SnQRNevqFtAfD3QstWd (THIS IS AN EXAMPLE - use your own!)",
+
+  "pools": [
+    {
+      "name": "vipor-singapore",
+      "url": "stratum+tcp://sg.vipor.net:5040",
+      "user": "YOUR_VERUS_WALLET_ADDRESS_HERE",
+      "pass": "MyMiner1",
+      "algo": "verus"
+    },
+    {
+      "_comment": "Backup pool — uncomment to use",
+      "_name": "vipor-us",
+      "_url": "stratum+tcp://us.vipor.net:5040",
+      "_user": "YOUR_VERUS_WALLET_ADDRESS_HERE",
+      "_pass": "MyMiner1"
+    }
+  ],
+
+  "algo": "verus",
+
+  "_threads_note": "Start with 6. Reduce to 4 if phone overheats. Increase to 8 on 6GB+ RAM phones.",
+  "threads": 6,
+
+  "_retry_pause_note": "Seconds to wait before reconnecting on error",
+  "retry-pause": 10,
+
+  "quiet": false
+}
